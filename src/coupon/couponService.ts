@@ -17,4 +17,7 @@ export class CouponService {
     async delete(couponId: string) {
         return await CouponModel.findByIdAndDelete(couponId);
     }
+    async verify(code: string, tenantId: number) {
+        return await CouponModel.findOne({ code, tenantId });
+    }
 }

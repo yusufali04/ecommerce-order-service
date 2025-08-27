@@ -13,6 +13,7 @@ couponRouter.post("/", authenticate, asyncWrapper(couponController.create));
 couponRouter.put("/:couponId", authenticate, asyncWrapper(couponController.update));
 couponRouter.get("/", authenticate, asyncWrapper(couponController.getAll));
 couponRouter.get("/:couponId", authenticate, asyncWrapper(couponController.getById));
+couponRouter.post("/verify", authenticate, asyncWrapper(couponController.verify));
 couponRouter.delete("/:couponId", authenticate, asyncWrapper(couponController.delete));
 
 export default couponRouter;

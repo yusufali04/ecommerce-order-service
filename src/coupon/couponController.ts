@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { Request } from "express-jwt";
+import { Request as ExpressRequest } from "express";
 import { CouponService } from "./couponService";
 import { Coupon } from "./couponTypes";
 
@@ -64,5 +65,19 @@ export class CouponController {
         }
         const deletedCoupon = await this.couponService.delete(couponId);
         res.status(200).json(deletedCoupon);
+    }
+    verify = async (req: ExpressRequest, res: Response) => {
+        const { code, tenantId } = req.body;
+        const coupon = await this.couponService.verify(code, tenantId);
+        if (!coupon) {
+            return res.status(404).json({ message: "Coupon not found or invalid" });
+        }
+        // validate expiry
+        const currentDate = new Date();
+        const couponDate = new Date(coupon.validUpto);
+        if (currentDate <= couponDate) {
+            return res.json({ valid: true, discount: coupon.discount })
+        }
+        res.status(200).json({ valid: false, discount: 0 });
     }
 }

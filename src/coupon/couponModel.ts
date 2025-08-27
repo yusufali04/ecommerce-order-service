@@ -9,4 +9,7 @@ const couponSchema = new mongoose.Schema<Coupon>({
     tenantId: { type: Number, required: true }
 }, { timestamps: true })
 
+// Create a compound index on tenantId and code for faster lookup
+couponSchema.index({ tenantId: 1, code: 1 }, { unique: true });
+
 export const CouponModel = mongoose.model("Coupon", couponSchema);
