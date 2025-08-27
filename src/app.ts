@@ -12,8 +12,8 @@ app.get("/", (req: Request, res: Response) => {
   res.json({ message: "Hello from order service service!" });
 });
 
-app.use("/customer", customerRouter)
-app.use("/coupon", couponRouter);
+app.use("/customers", customerRouter)
+app.use("/coupons", couponRouter);
 
 app.use(globalErrorHandler);
 
