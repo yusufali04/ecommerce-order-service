@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { Request } from "express-jwt";
 import { CustomerService } from "./customerService";
-import { Customer } from "./customerTypes";
+import { Address, Customer } from "./customerTypes";
 import { Logger } from "winston";
 
 export class CustomerController {
@@ -15,6 +15,20 @@ export class CustomerController {
         if (!customer) {
             const newCustomer = await this.customerService.createCustomer({ userId, firstName, lastName, email, addresses: [] } as Customer)
             return res.json(newCustomer);
+        }
+        res.json(customer);
+    }
+    addAddress = async (req: Request, res: Response) => {
+        const { sub: userId } = req.auth;
+        const { customerId } = req.params;
+        const newAddress: Address = {
+            text: req.body.address,
+            isDefault: false
+        };
+        this.logger.info(`Adding new address for customerId: ${customerId}`, newAddress);
+        const customer = await this.customerService.addAddress(customerId, userId, newAddress);
+        if (!customer) {
+            return res.status(404).json({ message: "Customer not found" });
         }
         res.json(customer);
     }
