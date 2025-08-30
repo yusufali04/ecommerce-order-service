@@ -34,6 +34,7 @@ export interface ProductMessage {
 export interface ToppingMessage {
   id: string;
   price: number;
+  tenantId: string;
 }
 
 export type Topping = {

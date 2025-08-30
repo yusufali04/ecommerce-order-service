@@ -2,12 +2,13 @@ import { ToppingMessage } from "../types";
 import ToppingCacheModel from "./toppingCacheModel";
 
 export const handleToppingUpdate = async (value: string) => {
-    const product: ToppingMessage = JSON.parse(value);
+    const topping: ToppingMessage = JSON.parse(value);
     return await ToppingCacheModel.updateOne({
-        toppingId: product.id
+        toppingId: topping.id
     }, {
         $set: {
-            price: product.price
+            price: topping.price,
+            tenantId: topping.tenantId
         }
     }, { upsert: true })
 }
