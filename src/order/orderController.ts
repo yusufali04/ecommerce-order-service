@@ -1,45 +1,72 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { CartItem, ProductPricingCache, Topping, ToppingPricingCache } from "../types";
 import ProductCacheModel from "../productCache/productCacheModel";
 import ToppingCacheModel from "../toppingCache/toppingCacheModel";
 import { CouponModel } from "../coupon/couponModel";
 import OrderModel from "./orderModel";
 import { OrderStatus, PaymentStatus } from "./orderTypes";
+import IdempotencyModel from "../idempotency/idempotencyModel";
+import mongoose from "mongoose";
+import createHttpError from "http-errors";
 
 export class OrderController {
     constructor() { }
-    create = async (req: Request, res: Response) => {
+    create = async (req: Request, res: Response, next: NextFunction) => {
         const { cart, tenantId, paymentMode, customerId, comment, address, couponCode } = req.body
+
         const subTotal = await this.calculateTotal(req.body.cart);
         let discountPercentage = 0;
         if (couponCode) {
             discountPercentage = await this.getDiscountPercentage(couponCode, tenantId)
         }
         const discountAmount = parseFloat((subTotal * discountPercentage / 100).toFixed(2))
-
         const priceAfterDiscount = parseFloat((subTotal - discountAmount).toFixed(2));
+
         // Todo: Store in DB for each tenant
         const TAXES_PERCENT = 18;
         const DELIVERY_CHARGES = 50;
         const taxes = parseFloat((priceAfterDiscount * TAXES_PERCENT / 100).toFixed(2));
         const finalTotal = parseFloat((priceAfterDiscount + taxes + DELIVERY_CHARGES).toFixed(2));
 
-        // create an order
-        const newOrder = await OrderModel.create({
-            cart,
-            customerId,
-            total: finalTotal,
-            discount: discountAmount,
-            taxes,
-            deliveryCharges: DELIVERY_CHARGES,
-            address,
-            tenantId,
-            comment,
-            paymentMode,
-            orderStatus: OrderStatus.RECEIVED,
-            paymentStatus: PaymentStatus.PENDING
-        })
-        res.status(200).json({ newOrder });
+        const idempotencyKey = req.headers["idempotency-key"];
+
+        const idempotency = await IdempotencyModel.findOne({ key: idempotencyKey });
+        let newOrder = idempotency ? [idempotency.response] : [];
+        if (!idempotency) {
+            const session = await mongoose.startSession();
+            await session.startTransaction();
+            try {
+                // create an order
+                newOrder = await OrderModel.create([{
+                    cart,
+                    customerId,
+                    total: finalTotal,
+                    discount: discountAmount,
+                    taxes,
+                    deliveryCharges: DELIVERY_CHARGES,
+                    address,
+                    tenantId,
+                    comment,
+                    paymentMode,
+                    orderStatus: OrderStatus.RECEIVED,
+                    paymentStatus: PaymentStatus.PENDING
+                }], { session });
+                await IdempotencyModel.create([{ key: idempotencyKey, response: newOrder[0] }], { session })
+                // Commit transaction
+                await session.commitTransaction();
+            } catch (err) {
+                // Abort transaction
+                await session.abortTransaction();
+                await session.endSession();
+                return next(createHttpError(500, err.message))
+            } finally {
+                await session.endSession();
+            }
+        }
+        // Payment processing
+
+
+        res.status(200).json(newOrder);
     }
 
     private calculateTotal = async (cart: CartItem[]) => {
@@ -76,7 +103,6 @@ export class OrderController {
         }, 0);
         return totalPrice;
     }
-
     private getItemTotal = (
         item: CartItem,
         cachedProductPrice: ProductPricingCache,
@@ -111,7 +137,6 @@ export class OrderController {
 
         return currentTopping.price;
     };
-
     private getDiscountPercentage = async (
         couponCode: string,
         tenantId: string,
@@ -128,5 +153,4 @@ export class OrderController {
         }
         return 0;
     };
-
 }
