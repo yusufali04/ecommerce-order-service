@@ -14,7 +14,12 @@ export class OrderController {
             discountPercentage = await this.getDiscountPercentage(couponCode, tenantId)
         }
         const discountAmount = parseFloat((subTotal * discountPercentage / 100).toFixed(2))
-        res.status(200).json({ discountAmount: discountAmount });
+
+        const priceAfterDiscount = parseFloat((subTotal - discountAmount).toFixed(2));
+        // Todo: Store in DB for each tenant
+        const TAXES_PERCENT = 18
+        const taxes = parseFloat((priceAfterDiscount * TAXES_PERCENT / 100).toFixed(2));
+        res.status(200).json({ taxes: taxes });
     }
 
     private calculateTotal = async (cart: CartItem[]) => {
