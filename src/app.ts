@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import customerRouter from "./customer/customerRouter";
 import couponRouter from "./coupon/couponRouter";
 import cors from "cors";
+import orderRouter from "./order/orderRouter";
 
 const app = express();
 const allowedOrigins = ["http://localhost:5173", "http://localhost:3000"];
@@ -33,6 +34,7 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use("/customer", customerRouter)
 app.use("/coupons", couponRouter);
+app.use("/orders", orderRouter)
 
 app.use(globalErrorHandler);
 
