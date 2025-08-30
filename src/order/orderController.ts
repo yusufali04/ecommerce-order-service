@@ -2,13 +2,19 @@ import { Request, Response } from "express";
 import { CartItem, ProductPricingCache, Topping, ToppingPricingCache } from "../types";
 import ProductCacheModel from "../productCache/productCacheModel";
 import ToppingCacheModel from "../toppingCache/toppingCacheModel";
+import { CouponModel } from "../coupon/couponModel";
 
 export class OrderController {
     constructor() { }
     create = async (req: Request, res: Response) => {
-        const totalPrice = await this.calculateTotal(req.body.cart);
-
-        res.status(200).json({ totalPrice });
+        const subTotal = await this.calculateTotal(req.body.cart);
+        let discountPercentage = 0;
+        const { couponCode, tenantId } = req.body;
+        if (couponCode) {
+            discountPercentage = await this.getDiscountPercentage(couponCode, tenantId)
+        }
+        const discountAmount = parseFloat((subTotal * discountPercentage / 100).toFixed(2))
+        res.status(200).json({ discountAmount: discountAmount });
     }
 
     private calculateTotal = async (cart: CartItem[]) => {
@@ -81,23 +87,21 @@ export class OrderController {
         return currentTopping.price;
     };
 
-    // private getDiscountPercentage = async (
-    //     couponCode: string,
-    //     tenantId: string,
-    // ) => {
-    //     const code = await CouponModel.findOne({ code: couponCode, tenantId });
+    private getDiscountPercentage = async (
+        couponCode: string,
+        tenantId: string,
+    ) => {
+        const code = await CouponModel.findOne({ code: couponCode, tenantId });
+        if (!code) {
+            return 0;
+        }
+        const currentDate = new Date();
+        const couponDate = new Date(code.validUpto);
 
-    //     if (!code) {
-    //         return 0;
-    //     }
+        if (currentDate <= couponDate) {
+            return code.discount;
+        }
+        return 0;
+    };
 
-    //     const currentDate = new Date();
-    //     const couponDate = new Date(code.validUpto);
-
-    //     if (currentDate <= couponDate) {
-    //         return code.discount;
-    //     }
-
-    //     return 0;
-    // };
 }
