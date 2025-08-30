@@ -17,9 +17,11 @@ export class OrderController {
 
         const priceAfterDiscount = parseFloat((subTotal - discountAmount).toFixed(2));
         // Todo: Store in DB for each tenant
-        const TAXES_PERCENT = 18
+        const TAXES_PERCENT = 18;
+        const DELIVERY_CHARGES = 50;
         const taxes = parseFloat((priceAfterDiscount * TAXES_PERCENT / 100).toFixed(2));
-        res.status(200).json({ taxes: taxes });
+        const finalTotal = parseFloat((priceAfterDiscount + taxes + DELIVERY_CHARGES).toFixed(2));
+        res.status(200).json({ finalTotal: finalTotal });
     }
 
     private calculateTotal = async (cart: CartItem[]) => {
