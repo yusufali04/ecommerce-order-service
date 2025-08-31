@@ -4,7 +4,7 @@ import ProductCacheModel from "../productCache/productCacheModel";
 import ToppingCacheModel from "../toppingCache/toppingCacheModel";
 import { CouponModel } from "../coupon/couponModel";
 import OrderModel from "./orderModel";
-import { OrderStatus, PaymentStatus } from "./orderTypes";
+import { OrderStatus, PaymentMode, PaymentStatus } from "./orderTypes";
 import IdempotencyModel from "../idempotency/idempotencyModel";
 import mongoose from "mongoose";
 import createHttpError from "http-errors";
@@ -64,15 +64,18 @@ export class OrderController {
                 await session.endSession();
             }
         }
-        // Payment processing...    
-        const session = await this.paymentGateway.createSession({
-            amount: finalTotal,
-            orderId: (newOrder[0]._id).toString(),
-            tenantId: tenantId,
-            idempotencyKey: idempotencyKey as string
-        });
-        // Update payment id to order in db
-        res.status(200).json({ paymentURL: session.paymentUrl });
+        if (paymentMode === PaymentMode.CARD) {
+            // Payment processing...    
+            const session = await this.paymentGateway.createSession({
+                amount: finalTotal,
+                orderId: (newOrder[0]._id).toString(),
+                tenantId: tenantId,
+                idempotencyKey: idempotencyKey as string
+            });
+            // Update payment id to order in db
+            res.status(200).json({ paymentURL: session.paymentUrl });
+        }
+        return res.json({ paymentURL: null })
     }
 
     private calculateTotal = async (cart: CartItem[]) => {
