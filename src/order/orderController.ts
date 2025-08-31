@@ -73,7 +73,7 @@ export class OrderController {
                 idempotencyKey: idempotencyKey as string
             });
             // Update payment id to order in db
-            res.status(200).json({ paymentURL: session.paymentUrl });
+            return res.status(200).json({ paymentURL: session.paymentUrl });
         }
         return res.json({ paymentURL: null })
     }
