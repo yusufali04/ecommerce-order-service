@@ -8,9 +8,10 @@ import { OrderStatus, PaymentStatus } from "./orderTypes";
 import IdempotencyModel from "../idempotency/idempotencyModel";
 import mongoose from "mongoose";
 import createHttpError from "http-errors";
+import { PaymentGateway } from "../payment/paymentTypes";
 
 export class OrderController {
-    constructor() { }
+    constructor(private paymentGateway: PaymentGateway) { }
     create = async (req: Request, res: Response, next: NextFunction) => {
         const { cart, tenantId, paymentMode, customerId, comment, address, couponCode } = req.body
 
@@ -63,10 +64,15 @@ export class OrderController {
                 await session.endSession();
             }
         }
-        // Payment processing
-
-
-        res.status(200).json(newOrder);
+        // Payment processing...    
+        const session = await this.paymentGateway.createSession({
+            amount: finalTotal,
+            orderId: (newOrder[0]._id).toString(),
+            tenantId: tenantId,
+            idempotencyKey: idempotencyKey as string
+        });
+        // Update payment id to order in db
+        res.status(200).json({ paymentURL: session.paymentUrl });
     }
 
     private calculateTotal = async (cart: CartItem[]) => {
