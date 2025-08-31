@@ -9,9 +9,10 @@ import IdempotencyModel from "../idempotency/idempotencyModel";
 import mongoose from "mongoose";
 import createHttpError from "http-errors";
 import { PaymentGateway } from "../payment/paymentTypes";
+import { MessageBroker } from "../types/broker";
 
 export class OrderController {
-    constructor(private paymentGateway: PaymentGateway) { }
+    constructor(private paymentGateway: PaymentGateway, private broker: MessageBroker) { }
     create = async (req: Request, res: Response, next: NextFunction) => {
         const { cart, tenantId, paymentMode, customerId, comment, address, couponCode } = req.body
 
@@ -72,9 +73,12 @@ export class OrderController {
                 tenantId: tenantId,
                 idempotencyKey: idempotencyKey as string
             });
+
             // Update payment id to order in db
+            await this.broker.sendMessage("order", JSON.stringify(newOrder));
             return res.status(200).json({ paymentURL: session.paymentUrl });
         }
+        await this.broker.sendMessage("order", JSON.stringify(newOrder));
         return res.json({ paymentURL: null })
     }
 
