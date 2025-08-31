@@ -12,6 +12,22 @@ export class StripeGateway implements PaymentGateway {
             metadata: {
                 orderId: options.orderId
             },
+            billing_address_collection: 'required',
+            // todo: get customer email from database
+            // customer_email: options.email,
+            // todo: Capture structured address from customer
+            // payment_intent_data: {
+            //     shipping: {
+            //         name: "Yousuf",
+            //         address: {
+            //             line1: "Hyderabad, India",
+            //             city: "Hyderabad",
+            //             country: "India",
+            //             postal_code: "500018"
+            //         },
+
+            //     }
+            // },
             line_items: [
                 {
                     price_data: {
