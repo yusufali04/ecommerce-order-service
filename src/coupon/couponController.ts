@@ -11,8 +11,6 @@ import { Coupon } from "./couponTypes";
 export class CouponController {
     constructor(private couponService: CouponService) { }
     create = async (req: Request, res: Response) => {
-        console.log("request came");
-        console.log(req.auth);
 
         const { role, tenant } = req.auth!;
         if (role !== "admin" && role !== "manager") {
