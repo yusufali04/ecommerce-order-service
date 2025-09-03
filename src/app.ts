@@ -23,7 +23,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "Set-Cookie", "Cookie"],
+  allowedHeaders: ["Content-Type", "Authorization", "Set-Cookie", "Cookie", "Idempotency-Key"],
 };
 app.use(cors(corsOptions));
 app.use(cookieParser());
