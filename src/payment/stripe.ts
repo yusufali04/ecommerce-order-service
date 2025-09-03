@@ -45,8 +45,8 @@ export class StripeGateway implements PaymentGateway {
                 }
             ],
             mode: "payment",
-            success_url: `${config.get("frontend.clientUIURL")}/payment?success=true&orderId=${options.orderId}`,
-            cancel_url: `${config.get("frontend.clientUIURL")}/payment?success=false&orderId=${options.orderId}`
+            success_url: `${config.get("frontend.clientUIURL")}/payment?success=true&orderId=${options.orderId}&restaurant=${options.tenantId}`,
+            cancel_url: `${config.get("frontend.clientUIURL")}/payment?success=false&orderId=${options.orderId}&restaurant=${options.tenantId}`
         }, { idempotencyKey: options.idempotencyKey });
 
         return {
