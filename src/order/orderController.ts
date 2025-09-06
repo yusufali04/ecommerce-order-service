@@ -100,11 +100,12 @@ export class OrderController {
         const { orderId } = req.params;
         const { sub: userId, role, tenant: tenantId } = req.auth;
         const fields = req.query.fields ? req.query.fields.toString().split(',') : [];
+
         const projection = fields.reduce((acc, field) => {
             acc[field] = 1;
             return acc;
-        }, {})
-        const order = await OrderModel.findOne({ _id: orderId }, { ...projection });
+        }, { customerId: 1 })
+        const order = await OrderModel.findOne({ _id: orderId }, { ...projection }).populate('customerId').exec();
         if (!order) {
             return next(createHttpError(404, "Order not found"))
         }
@@ -117,7 +118,7 @@ export class OrderController {
             if (!customer) {
                 return next(createHttpError(404, "Customer not found"))
             }
-            if (customer._id.toString() === order.customerId.toString()) {
+            if (customer._id.toString() === order.customerId._id.toString()) {
                 return res.json(order);
             }
         }
