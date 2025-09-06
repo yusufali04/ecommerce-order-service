@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { Request as AuthRequest } from "express-jwt";
-import { CartItem, ProductPricingCache, Topping, ToppingPricingCache } from "../types";
+import { CartItem, ProductPricingCache, Roles, Topping, ToppingPricingCache } from "../types";
 import ProductCacheModel from "../productCache/productCacheModel";
 import ToppingCacheModel from "../toppingCache/toppingCacheModel";
 import { CouponModel } from "../coupon/couponModel";
@@ -83,6 +83,24 @@ export class OrderController {
         await this.broker.sendMessage("order", JSON.stringify(newOrder));
         return res.json({ paymentURL: null })
     }
+    getAll = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        const { role, tenant: userTenantId } = req.auth;
+        const tenantId = req.query.tenantId;
+        if (role === Roles.ADMIN) {
+            const filter = {};
+            if (tenantId) {
+                filter["tenantId"] = tenantId;
+            }
+            // todo: Implement Pagination
+            const orders = await OrderModel.find(filter, {}, { sort: { createdAt: -1 } }).populate('customerId').exec();
+            return res.json(orders);
+        }
+        if (role === Roles.MANAGER) {
+            const orders = await OrderModel.find({ tenantId: userTenantId }, {}, { sort: { createdAt: -1 } }).populate('customerId').exec();
+            return res.json(orders);
+        }
+        return next(createHttpError(403, "Unauthorized request"))
+    }
     getMine = async (req: AuthRequest, res: Response, next: NextFunction) => {
         const userId = req.auth.sub;
         if (!userId) {
@@ -110,10 +128,10 @@ export class OrderController {
             return next(createHttpError(404, "Order not found"))
         }
         const myRestaurantOrder = order.tenantId === tenantId;
-        if (role === 'admin' || (role === 'manager' && myRestaurantOrder)) {
+        if (role === Roles.ADMIN || (role === Roles.MANAGER && myRestaurantOrder)) {
             return res.json(order);
         }
-        if (role === 'customer') {
+        if (role === Roles.CUSTOMER) {
             const customer = await CustomerModel.findOne({ userId });
             if (!customer) {
                 return next(createHttpError(404, "Customer not found"))

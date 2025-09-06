@@ -80,3 +80,9 @@ export interface ToppingPricingCache {
   price: number,
   tenantId: string
 }
+
+export enum Roles {
+  ADMIN = 'admin',
+  CUSTOMER = 'customer',
+  MANAGER = 'manager'
+}
