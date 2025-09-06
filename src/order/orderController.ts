@@ -99,8 +99,12 @@ export class OrderController {
     getSingle = async (req: AuthRequest, res: Response, next: NextFunction) => {
         const { orderId } = req.params;
         const { sub: userId, role, tenant: tenantId } = req.auth;
-        // todo: Implement pagination
-        const order = await OrderModel.findOne({ _id: orderId });
+        const fields = req.query.fields ? req.query.fields.toString().split(',') : [];
+        const projection = fields.reduce((acc, field) => {
+            acc[field] = 1;
+            return acc;
+        }, {})
+        const order = await OrderModel.findOne({ _id: orderId }, { ...projection });
         if (!order) {
             return next(createHttpError(404, "Order not found"))
         }
