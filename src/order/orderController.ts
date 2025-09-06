@@ -96,6 +96,29 @@ export class OrderController {
         const orders = await OrderModel.find({ customerId: customer._id }, { cart: 0 }).sort({ createdAt: -1 });
         return res.json(orders);
     }
+    getSingle = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        const { orderId } = req.params;
+        const { sub: userId, role, tenant: tenantId } = req.auth;
+        // todo: Implement pagination
+        const order = await OrderModel.findOne({ _id: orderId });
+        if (!order) {
+            return next(createHttpError(404, "Order not found"))
+        }
+        const myRestaurantOrder = order.tenantId === tenantId;
+        if (role === 'admin' || (role === 'manager' && myRestaurantOrder)) {
+            return res.json(order);
+        }
+        if (role === 'customer') {
+            const customer = await CustomerModel.findOne({ userId });
+            if (!customer) {
+                return next(createHttpError(404, "Customer not found"))
+            }
+            if (customer._id.toString() === order.customerId.toString()) {
+                return res.json(order);
+            }
+        }
+        return next(createHttpError(403, "Operation not permitted"))
+    }
 
     private calculateTotal = async (cart: CartItem[]) => {
         const productIds = cart.map(item => item._id);
