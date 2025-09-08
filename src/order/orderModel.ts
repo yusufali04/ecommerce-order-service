@@ -46,17 +46,17 @@ const cartSchema = new mongoose.Schema<CartItem>({
             of: String,
             required: true
         },
-        selectedToppings: [
-            {
-                type: [toppingSchema],
-                required: true
-            }
-        ]
+        selectedToppings:
+        {
+            type: [toppingSchema],
+            required: true
+        }
+
     }
 }, { _id: false })
 
 const orderSchema = new mongoose.Schema<Order>({
-    cart: [{ type: [cartSchema], required: true }],
+    cart: { type: [cartSchema], required: true },
     customerId: { type: Schema.Types.ObjectId, ref: "Customer", required: true },
     total: { type: Number, required: true },
     discount: { type: Number, required: true },
