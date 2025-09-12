@@ -10,9 +10,10 @@ const paymentGateway = new StripeGateway();
 const broker = createMessageBroker();
 const orderController = new OrderController(paymentGateway, broker);
 
-router.post("/", authenticate, asyncWrapper(orderController.create))
-router.get("/", authenticate, asyncWrapper(orderController.getAll))
-router.get("/mine", authenticate, asyncWrapper(orderController.getMine))
-router.get("/:orderId", authenticate, asyncWrapper(orderController.getSingle))
+router.post("/", authenticate, asyncWrapper(orderController.create));
+router.get("/", authenticate, asyncWrapper(orderController.getAll));
+router.get("/mine", authenticate, asyncWrapper(orderController.getMine));
+router.get("/:orderId", authenticate, asyncWrapper(orderController.getSingle));
+router.patch("/change-status/:orderId", authenticate, asyncWrapper(orderController.changeStatus));
 
 export default router;

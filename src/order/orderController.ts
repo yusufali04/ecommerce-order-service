@@ -142,6 +142,28 @@ export class OrderController {
         }
         return next(createHttpError(403, "Operation not permitted"))
     }
+    changeStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        const { orderStatus } = req.body;
+        const { role, tenant: tenantId } = req.auth;
+        const orderId = req.params.orderId;
+        if (!Object.values(OrderStatus).includes(orderStatus)) {
+            next(createHttpError(403, "Invalid order status"));
+        }
+        if (role === Roles.MANAGER || Roles.ADMIN) {
+            const order = await OrderModel.findOne({ _id: orderId });
+            if (!order) {
+                return next(createHttpError(404, "Order not found"));
+            }
+            const isMyRestaurantOrder = order.tenantId === tenantId;
+            if (role === Roles.MANAGER && !isMyRestaurantOrder) {
+                return next(createHttpError(403, "Unauthorized request"))
+            }
+            const updatedOrder = await OrderModel.findOneAndUpdate({ _id: orderId }, { orderStatus }, { new: true })
+            //  todo: send to kafka
+            return res.json({ _id: updatedOrder._id })
+        }
+        return next(createHttpError(403, "Unauthorized request"))
+    }
 
     private calculateTotal = async (cart: CartItem[]) => {
         const productIds = cart.map(item => item._id);
