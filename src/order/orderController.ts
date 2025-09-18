@@ -5,7 +5,7 @@ import ProductCacheModel from "../productCache/productCacheModel";
 import ToppingCacheModel from "../toppingCache/toppingCacheModel";
 import { CouponModel } from "../coupon/couponModel";
 import OrderModel from "./orderModel";
-import { OrderStatus, PaymentMode, PaymentStatus } from "./orderTypes";
+import { OrderEvents, OrderStatus, PaymentMode, PaymentStatus } from "./orderTypes";
 import IdempotencyModel from "../idempotency/idempotencyModel";
 import mongoose from "mongoose";
 import createHttpError from "http-errors";
@@ -67,6 +67,10 @@ export class OrderController {
                 await session.endSession();
             }
         }
+        const brokerMessage = {
+            event_type: OrderEvents.ORDER_CREATE,
+            data: newOrder[0]
+        }
         if (paymentMode === PaymentMode.CARD) {
             // Payment processing...    
             const session = await this.paymentGateway.createSession({
@@ -77,10 +81,11 @@ export class OrderController {
             });
 
             // Update payment id to order in db
-            await this.broker.sendMessage("order", JSON.stringify(newOrder));
+
+            await this.broker.sendMessage("order", JSON.stringify(brokerMessage), newOrder[0]._id.toString());
             return res.status(200).json({ paymentURL: session.paymentUrl });
         }
-        await this.broker.sendMessage("order", JSON.stringify(newOrder));
+        await this.broker.sendMessage("order", JSON.stringify(brokerMessage), newOrder[0]._id.toString());
         return res.json({ paymentURL: null })
     }
     getAll = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -160,6 +165,11 @@ export class OrderController {
             }
             const updatedOrder = await OrderModel.findOneAndUpdate({ _id: orderId }, { orderStatus }, { new: true })
             //  todo: send to kafka
+            const brokerMessage = {
+                event_type: OrderEvents.ORDER_STATUS_UPDATE,
+                data: updatedOrder
+            }
+            await this.broker.sendMessage("order", JSON.stringify(brokerMessage), updatedOrder._id.toString());
             return res.json({ _id: updatedOrder._id })
         }
         return next(createHttpError(403, "Unauthorized request"))

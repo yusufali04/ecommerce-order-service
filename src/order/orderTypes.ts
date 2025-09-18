@@ -20,6 +20,12 @@ export enum PaymentStatus {
     FAILED = "failed"
 }
 
+export enum OrderEvents {
+    ORDER_CREATE = "ORDER_CREATE",
+    PAYMENT_STATUS_UPDATE = "PAYMENT_STATUS_UPDATE",
+    ORDER_STATUS_UPDATE = "ORDER_STATUS_UPDATE"
+}
+
 export interface Order {
     cart: CartItem[];
     customerId: mongoose.Types.ObjectId;
