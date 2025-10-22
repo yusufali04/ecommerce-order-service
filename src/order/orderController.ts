@@ -67,9 +67,13 @@ export class OrderController {
                 await session.endSession();
             }
         }
+        const customer = await CustomerModel.findOne({ _id: newOrder[0].customerId });
+        if (!customer) {
+            return next(createHttpError(404, "Customer not found"))
+        }
         const brokerMessage = {
             event_type: OrderEvents.ORDER_CREATE,
-            data: newOrder[0]
+            data: { ...newOrder[0], customerId: customer }
         }
         if (paymentMode === PaymentMode.CARD) {
             // Payment processing...    
@@ -164,10 +168,14 @@ export class OrderController {
                 return next(createHttpError(403, "Unauthorized request"))
             }
             const updatedOrder = await OrderModel.findOneAndUpdate({ _id: orderId }, { orderStatus }, { new: true })
+            const customer = await CustomerModel.findOne({ _id: updatedOrder.customerId });
+            if (!customer) {
+                return next(createHttpError(404, "Customer not found"))
+            }
             //  todo: send to kafka
             const brokerMessage = {
                 event_type: OrderEvents.ORDER_STATUS_UPDATE,
-                data: updatedOrder
+                data: { ...updatedOrder.toObject(), customerId: customer }
             }
             await this.broker.sendMessage("order", JSON.stringify(brokerMessage), updatedOrder._id.toString());
             return res.json({ _id: updatedOrder._id })
