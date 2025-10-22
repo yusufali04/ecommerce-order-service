@@ -39,10 +39,18 @@ export interface ProductMessage {
   }
 }
 
+export enum ToppingEvents {
+  TOPPING_CREATE = "TOPPING_CREATE",
+  TOPPING_UPDATE = "TOPPING_UPDATE",
+}
+
 export interface ToppingMessage {
-  id: string;
-  price: number;
-  tenantId: string;
+  event_type: ToppingEvents;
+  data: {
+    id: string;
+    price: number;
+    tenantId: string;
+  }
 }
 
 export type Topping = {
