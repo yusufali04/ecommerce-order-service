@@ -6,21 +6,16 @@ import couponRouter from "./coupon/couponRouter";
 import paymentRouter from "./payment/paymentRouter";
 import cors from "cors";
 import orderRouter from "./order/orderRouter";
+import config from "config";
 
 const app = express();
-const allowedOrigins = ["http://localhost:5173", "http://localhost:3000"];
+const allowedOrigins: string[] = [
+  config.get("frontend.clientUIURL"),
+  config.get("frontend.adminUIURL"),
+];
 
 const corsOptions = {
-  origin: (
-    origin: string | undefined,
-    callback: (err: Error | null, allow: boolean) => void,
-  ) => {
-    if (allowedOrigins.includes(origin!) || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"), false);
-    }
-  },
+  origin: allowedOrigins,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "Set-Cookie", "Cookie", "Idempotency-Key"],
